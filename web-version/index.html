@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0c1310">
+  <meta name="description" content="14×14 有禁手五子棋：猜拳决定先后手，三档 AI 难度，黑棋禁三三、四四、长连。">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230c1310'/%3E%3Cpath d='M16 22H48M16 32H48M16 42H48M22 16V48M32 16V48M42 16V48' stroke='%23e6be7b' stroke-width='2' opacity='.45'/%3E%3Ccircle cx='32' cy='32' r='7' fill='%23e6be7b'/%3E%3C/svg%3E">
+  <title>五子棋 · 十四路有禁手</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
+
+  <div class="app" id="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-seal" aria-hidden="true">五</span>
+        <span class="brand-copy">
+          <span class="brand-title">五子棋</span>
+          <span class="brand-sub">GOMOKU · 14 × 14</span>
+        </span>
+      </div>
+      <div class="top-actions">
+        <button class="quiet-btn" id="rulesBtn" type="button">
+          <span class="quiet-dot" aria-hidden="true"></span>
+          玩法
+        </button>
+      </div>
+    </header>
+
+    <main class="game-shell">
+      <section class="board-column" aria-label="棋盘区域">
+        <div class="board-shell">
+          <div class="board" id="board">
+            <svg class="board-grid" viewBox="0 0 100 100" aria-hidden="true">
+              <g id="gridLines"></g>
+              <g id="starPoints"></g>
+              <g id="edgeMarks"></g>
+            </svg>
+
+            <div class="cells" id="cells" role="grid" aria-label="14 行 14 列五子棋棋盘" aria-rowcount="14" aria-colcount="14"></div>
+
+            <div class="stones" id="stonesLayer" aria-hidden="true"></div>
+
+            <svg class="win-layer" id="winLayer" viewBox="0 0 100 100" aria-hidden="true">
+              <line id="winLine" class="win-line" pathLength="100" x1="0" y1="0" x2="0" y2="0"></line>
+            </svg>
+
+            <div class="board-result" id="boardResult" hidden>
+              <div class="result-card" id="resultCard">
+                <span class="result-kicker" id="resultKicker">MATCH OVER</span>
+                <h2 id="resultTitle">你赢了</h2>
+                <p id="resultText">五子连珠，漂亮的一局。</p>
+                <div class="result-actions">
+                  <button class="btn btn-primary btn-small" id="rematchBtn" type="button">再来一局</button>
+                  <button class="btn btn-ghost btn-small" id="reviewBtn" type="button">看看棋盘</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="board-caption" aria-live="polite">
+          <span class="status-stone is-empty" id="statusStone" aria-hidden="true"></span>
+          <span class="status-text" id="statusText" role="status">准备开局</span>
+          <span class="thinking-dots" id="thinkingDots" aria-hidden="true" hidden>
+            <i></i><i></i><i></i>
+          </span>
+        </div>
+      </section>
+
+      <aside class="sidebar">
+        <section class="panel match-panel">
+          <div class="panel-heading">
+            <span>本局对弈</span>
+            <span class="difficulty-pill" id="difficultyPill">中等</span>
+          </div>
+
+          <div class="player-card" id="humanCard">
+            <span class="player-avatar human-avatar" aria-hidden="true">你</span>
+            <span class="player-copy">
+              <strong>你</strong>
+              <small id="humanColor">执黑</small>
+            </span>
+            <span class="turn-pill" id="humanTurnPill">落子中</span>
+          </div>
+
+          <div class="versus-line" aria-hidden="true"><span></span><em>VS</em><span></span></div>
+
+          <div class="player-card" id="aiCard">
+            <span class="player-avatar ai-avatar" aria-hidden="true">AI</span>
+            <span class="player-copy">
+              <strong>弈者</strong>
+              <small id="aiColor">执白</small>
+            </span>
+            <span class="turn-pill" id="aiTurnPill">思考中</span>
+          </div>
+
+          <div class="match-stats">
+            <div>
+              <span>手数</span>
+              <strong id="moveCount">0</strong>
+            </div>
+            <div>
+              <span>状态</span>
+              <strong id="matchState">待开局</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="game-actions" aria-label="对局操作">
+          <button class="btn btn-secondary" id="undoBtn" type="button" disabled>悔棋</button>
+          <button class="btn btn-primary" id="restartBtn" type="button">重新猜拳</button>
+        </section>
+
+        <section class="panel tip-panel">
+          <span class="tip-watermark" aria-hidden="true">五</span>
+          <h3>连成五子</h3>
+          <p>黑棋需恰好连成五子；白棋五子或长连均获胜。</p>
+          <p class="tip-sub">困难模式会预判数步，小心双三与冲四。</p>
+          <p class="tip-forbidden">黑棋禁手：三三 · 四四 · 长连</p>
+        </section>
+
+        <p class="rps-note"><span aria-hidden="true">✊</span> 每局由猜拳决定谁执黑先行</p>
+      </aside>
+    </main>
+
+    <footer class="footer">
+      <span>十四路棋盘</span>
+      <span class="footer-dot" aria-hidden="true"></span>
+      <span>黑棋禁手</span>
+      <span class="footer-dot" aria-hidden="true"></span>
+      <span>白棋长连算胜</span>
+    </footer>
+  </div>
+
+  <div class="modal-layer" id="setupModal" hidden>
+    <section class="modal setup-modal" role="dialog" aria-modal="true" aria-labelledby="setupTitle">
+      <button class="modal-close" id="setupCloseBtn" type="button" aria-label="返回当前对局" hidden>×</button>
+
+      <div class="modal-head">
+        <span class="modal-kicker">NEW MATCH</span>
+        <h2 id="setupTitle">落子之前</h2>
+        <p>选一个对手，再猜拳决定谁先落子。</p>
+      </div>
+
+      <div class="rule-banner">
+        <span class="rule-banner-icon" aria-hidden="true">禁</span>
+        <span class="rule-banner-copy">黑棋禁手：三三 · 四四 · 长连</span>
+        <span class="rule-banner-note">白棋无禁手</span>
+      </div>
+
+      <div class="setup-section">
+        <div class="section-label"><span>01</span> 选择难度</div>
+        <div class="difficulty-list" id="difficultyList" role="radiogroup" aria-label="AI 难度">
+          <button class="difficulty-option" type="button" data-level="easy" role="radio" aria-checked="false">
+            <span class="difficulty-mark" aria-hidden="true">○</span>
+            <strong>简单</strong>
+            <small>轻松热身</small>
+            <em>落子随性，偶尔会漏看杀招。</em>
+            <span class="option-check" aria-hidden="true">✓</span>
+          </button>
+          <button class="difficulty-option is-active" type="button" data-level="medium" role="radio" aria-checked="true">
+            <span class="difficulty-mark" aria-hidden="true">◐</span>
+            <strong>中等</strong>
+            <small>认真对弈</small>
+            <em>会攻会守，能识别常见陷阱。</em>
+            <span class="option-check" aria-hidden="true">✓</span>
+          </button>
+          <button class="difficulty-option" type="button" data-level="hard" role="radio" aria-checked="false">
+            <span class="difficulty-mark" aria-hidden="true">●</span>
+            <strong>困难</strong>
+            <small>步步紧逼</small>
+            <em>预判数步，擅长双重威胁。</em>
+            <span class="option-check" aria-hidden="true">✓</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="setup-section">
+        <div class="section-label"><span>02</span> 猜拳定先手</div>
+        <div class="rps-panel" id="rpsPanel">
+          <div class="rps-hands" id="rpsHands">
+            <div class="hand-slot">
+              <span class="hand-owner">你</span>
+              <span class="hand-emoji" id="playerHand">?</span>
+            </div>
+            <span class="rps-vs" aria-hidden="true">VS</span>
+            <div class="hand-slot hand-slot-ai">
+              <span class="hand-owner">弈者</span>
+              <span class="hand-emoji" id="aiHand">?</span>
+            </div>
+          </div>
+
+          <p class="rps-hint" id="rpsHint" role="status" aria-live="polite">选一个手势 · 赢家执黑先行</p>
+
+          <div class="rps-buttons" id="rpsButtons">
+            <button type="button" data-gesture="rock" aria-label="出石头">
+              <span aria-hidden="true">✊</span>
+              <small>石头</small>
+            </button>
+            <button type="button" data-gesture="scissors" aria-label="出剪刀">
+              <span aria-hidden="true">✌️</span>
+              <small>剪刀</small>
+            </button>
+            <button type="button" data-gesture="paper" aria-label="出布">
+              <span aria-hidden="true">✋</span>
+              <small>布</small>
+            </button>
+          </div>
+
+          <button class="btn btn-primary btn-full" id="startGameBtn" type="button" hidden>开始对局</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-layer" id="rulesModal" hidden>
+    <section class="modal rules-modal" role="dialog" aria-modal="true" aria-labelledby="rulesTitle">
+      <button class="modal-close" id="rulesCloseBtn" type="button" aria-label="关闭玩法说明">×</button>
+      <span class="modal-kicker">HOW TO PLAY</span>
+      <h2 id="rulesTitle">五子连珠 · 有禁手</h2>
+      <div class="rules-list">
+        <div class="rule-item">
+          <span>01</span>
+          <p>棋盘为 <strong>14 × 14</strong>，黑棋先行，双方轮流落子。</p>
+        </div>
+        <div class="rule-item">
+          <span>02</span>
+          <p>黑棋必须<strong>恰好连成五子</strong>才能获胜；白棋连成五子或<strong>长连</strong>均获胜。</p>
+        </div>
+        <div class="rule-item">
+          <span>03</span>
+          <p>黑棋禁止<strong>三三、四四、长连</strong>。若黑棋一手同时成五并形成禁手，<strong>五最大</strong>，判黑胜。</p>
+        </div>
+        <div class="rule-item">
+          <span>04</span>
+          <p>每局开始先与 AI 猜拳，<strong>赢家执黑先行</strong>；平局则重猜。</p>
+        </div>
+        <div class="rule-item">
+          <span>05</span>
+          <p>简单、中等、困难三档 AI，均遵守禁手规则。困难模式会搜索后续变化，注意它的双重威胁。</p>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" id="rulesOkBtn" type="button">明白了</button>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="engine.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
