@@ -1,6 +1,6 @@
-# AI_Generated
+# Gobang_a_simple_edition-
 
-> Something created by AI. I don't know whether they are usefull or not. Ahh, just put them on the repository.
+> 一个五子棋小程序。笑死我了，我自己连中等的人机都下不赢……
 
 ---
 
